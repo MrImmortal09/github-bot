@@ -1,11 +1,11 @@
 {
-  "name": "issue-management-workflow",
+  "name": "github-bot",
   "version": "1.0.0",
   "private": true,
   "description": "A Probot app",
   "author": "JoyBoy",
   "license": "ISC",
-  "homepage": "https://github.com//",
+  "homepage": "https://github.com/github-bot/",
   "keywords": [
     "probot",
     "github",
