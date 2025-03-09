@@ -2,7 +2,7 @@
 name: "[test] Testing Issue"
 about: "Report an issue or request improvements regarding tests"
 title: "[test] "
-labels: ["testing"]
+labels: ["test"]
 assignees: []
 ---
 
