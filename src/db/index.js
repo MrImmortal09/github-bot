@@ -1,4 +1,3 @@
-// src/db.js
 import sqlite3 from 'sqlite3';
 import { open } from 'sqlite';
 import path from 'path';
@@ -13,7 +12,7 @@ let dbPromise;
 export default async function initDB() {
   if (!dbPromise) {
     dbPromise = open({
-      filename: path.join(__dirname, 'assignments.db'),
+      filename: path.join(__dirname, 'cache/assignments.db'),
       driver: sqlite3.Database
     });
 
