@@ -1,8 +1,8 @@
-import initDB from "../src/db.js";
 import { describe, test } from "node:test";
-import assert from "node:assert";
+import assert from "assert";
+import initDB from "../src/db/index.js";
 
-describe("Database (db.js)", () => {
+describe("Database", () => {
   test("should create necessary tables", async () => {
     const db = await initDB();
     const tables = await db.all("SELECT name FROM sqlite_master WHERE type='table'");

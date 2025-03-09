@@ -1,8 +1,8 @@
-import { processExpiredAssignments } from "../src/scheduler.js";
-import { assignmentManager } from "../src/assignmentManager.js";
-import initDB from "../src/db.js";
 import { describe, beforeEach, test } from "node:test";
-import assert from "node:assert";
+import assert from "assert";
+import initDB from "../src/db/index.js";
+import { processExpiredAssignments } from "../src/helper/scheduler.js";
+import { assignmentManager } from "../src/helper/assignmentManager.js";
 
 describe("Scheduler (scheduler.js)", () => {
   let app;

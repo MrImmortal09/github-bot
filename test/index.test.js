@@ -1,5 +1,7 @@
 import nock from "nock";
-import myProbotApp from "../index.js";
+import init from "../src/index.js";
+import { issueClosed, issueCommentCreated, issueOpened } from "../src/func/issues.js";
+import { pullRequestClosed } from "../src/func/pullRequest.js";
 import { Probot, ProbotOctokit } from "probot";
 import fs from "fs";
 import path from "path";
@@ -14,14 +16,6 @@ const privateKey = fs.readFileSync(
   path.join(__dirname, "fixtures/mock-cert.pem"),
   "utf-8"
 );
-
-// Read the fixture payload for issues.opened.
-const payload = JSON.parse(
-  fs.readFileSync(path.join(__dirname, "fixtures/issues.opened.json"), "utf-8")
-);
-
-// Expected comment body as defined in your index.js handler.
-const issueCreatedBody = { body: "Thanks for opening this issue!" };
 
 describe("My Probot App (index)", () => {
   let probot;
@@ -41,8 +35,49 @@ describe("My Probot App (index)", () => {
     });
 
     // Load your app.
-    probot.load(myProbotApp);
+    probot.load(init);
   });
+
+  test("should register the correct event handlers", () => {
+    // Create a fake app that collects handlers.
+    const fakeApp = {
+      handlers: {},
+      on(event, handler) {
+        this.handlers[event] = handler;
+      },
+    };
+
+    // Initialize the app (this registers event handlers).
+    init(fakeApp);
+
+    // Verify that each event is registered with the correct handler.
+    assert.strictEqual(
+      fakeApp.handlers["pull_request.closed"],
+      pullRequestClosed,
+      'Expected "pull_request.closed" handler to be pullRequestClosed'
+    );
+    assert.strictEqual(
+      fakeApp.handlers["issues.opened"],
+      issueOpened,
+      'Expected "issues.opened" handler to be issueOpened'
+    );
+    assert.strictEqual(
+      fakeApp.handlers["issues.closed"],
+      issueClosed,
+      'Expected "issues.closed" handler to be issueClosed'
+    );
+    assert.strictEqual(
+      fakeApp.handlers["issue_comment.created"],
+      issueCommentCreated,
+      'Expected "issue_comment.created" handler to be issueCommentCreated'
+    );
+  });
+
+  // Example integration test using a fixture payload.
+  const payload = JSON.parse(
+    fs.readFileSync(path.join(__dirname, "fixtures/issues.opened.json"), "utf-8")
+  );
+  const issueCreatedBody = { body: "Thanks for opening this issue!" };
 
   test("creates a comment when an issue is opened", async () => {
     const mock = nock("https://api.github.com")
@@ -71,9 +106,3 @@ describe("My Probot App (index)", () => {
     nock.enableNetConnect();
   });
 });
-
-// For more information about testing with Jest see:
-// https://facebook.github.io/jest/
-
-// For more information about testing with Nock see:
-// https://github.com/nock/nock
