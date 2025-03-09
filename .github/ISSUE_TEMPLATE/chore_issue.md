@@ -1,7 +1,7 @@
 ---
 name: "[chore] Chore Task"
 about: "General maintenance or chore related to the project"
-title: "[chore] "
+title: "[chore]: "
 labels: ["chore"]
 assignees: []
 ---
