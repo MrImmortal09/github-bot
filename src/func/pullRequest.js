@@ -22,9 +22,9 @@ export const pullRequestClosed = async (context) => {
       const assignment = await assignmentManager.getAssignment(repo, { number: issueNumber });
       if (assignment) {
         await assignmentManager.removeAssignment(repo, { number: issueNumber });
-        // If the user was blocked, clear the block.
-        if (await assignmentManager.isUserBlocked(sender)) {
-          await assignmentManager.clearBlock(sender);
+        // If the user was blocked for this issue, clear the block.
+        if (await assignmentManager.isUserBlocked(repo, { number: issueNumber }, sender)) {
+          await assignmentManager.clearBlock(repo, { number: issueNumber }, sender);
         }
         const body = `Assignment for @${sender} on issue #${issueNumber} has been completed with the PR merge.`;
         await context.octokit.issues.createComment({

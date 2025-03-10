@@ -6,9 +6,12 @@ export async function processExpiredAssignments(context) {
   for (const assignment of assignments) {
     if (assignment.deadline < now) {
       try {
-        // Use app.auth() without a context (assumes a default installation auth).
         const repoParts = assignment.repo.split('/');
-        const repo = { full_name: assignment.repo, name: repoParts[1], owner: { login: repoParts[0] } };
+        const repo = {
+          full_name: assignment.repo,
+          name: repoParts[1],
+          owner: { login: repoParts[0] }
+        };
         const issue = { number: assignment.issue_number };
         await context.octokit.issues.removeAssignees({
           owner: repo.owner.login,
@@ -23,11 +26,11 @@ export async function processExpiredAssignments(context) {
           issue_number: issue.number,
           body
         });
-        await assignmentManager.blockUser(assignment.assignee, 5);
+        // Updated call: pass repo and issue for per-issue block.
+        await assignmentManager.blockUser(repo, issue, assignment.assignee, 5);
         await assignmentManager.removeAssignment(repo, issue);
       } catch (error) {
-        console.log(error)
-        app.log.error(`Error processing expired assignment id ${assignment.id}:`, error);
+        console.log(error);
       }
     }
   }
@@ -37,9 +40,10 @@ export async function processQueuedAssignments(context) {
   const queuedUsers = await assignmentManager.getAllQueuedUsers();
   for (const user of queuedUsers) {
     try {
-      await assignmentManager.processQueueForUser(user, context);
+      // Updated call: pass context.octokit instead of context.
+      await assignmentManager.processQueueForUser(user, context.octokit);
     } catch (error) {
-      app.log.error(`Error processing queue for ${user}:`, error);
+      console.log(error)
     }
   }
 }

@@ -9,8 +9,6 @@ const issueOpened = async (context) => {
 
 const issueClosed = async (context) => {
   const { issue, repository } = context.payload;
-  // Instead of relying on issue.assignee (which might be null),
-  // try to fetch the assignment record.
   const assignment = await assignmentManager.getAssignment(repository, issue);
   if (assignment) {
     await assignmentManager.removeAssignment(repository, issue);
@@ -38,9 +36,9 @@ const issueCommentCreated = async (context) => {
       duration = 3 * 60 * 60 * 1000;
     }
 
-    if (await assignmentManager.isUserBlocked(sender)) {
-      const blockUntil = await assignmentManager.getUserBlockTime(sender);
-      const body = `@${sender}, you are temporarily blocked from new assignments until ${new Date(blockUntil).toLocaleString()} due to a previous expired assignment.`;
+    if (await assignmentManager.isUserBlocked(repo, issue, sender)) {
+      const blockUntil = await assignmentManager.getUserBlockTime(repo, issue, sender);
+      const body = `@${sender}, you are temporarily blocked from being assigned this issue until ${new Date(blockUntil).toLocaleString()} due to a previous expired assignment.`;
       await context.octokit.issues.createComment({
         owner: repo.owner.login,
         repo: repo.name,
@@ -108,8 +106,7 @@ const issueCommentCreated = async (context) => {
   }
   // === /extend Command (maintainer-only) ===
   else if (command.startsWith('/extend-')) {
-    // Ensure that the sender is authorized.
-    const maintainers = ['0PrashantYadav0']; // Replace with real GitHub usernames.
+    const maintainers = ['0PrashantYadav0', 'maintainer1'];
     try {
       if (!maintainers.includes(sender)) {
         const body = `@${sender} is not authorized to extend assignment deadlines.`;
@@ -162,7 +159,6 @@ const issueCommentCreated = async (context) => {
       }
     } catch (error) {
       console.error(`Error processing /extend command: ${error}`);
-      // Optionally, notify the user of the error.
       const body = `An error occurred while processing your /extend command. Please try again later.`;
       await context.octokit.issues.createComment({
         owner: repo.owner.login,

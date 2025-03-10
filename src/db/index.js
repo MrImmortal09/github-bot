@@ -39,8 +39,11 @@ export default async function initDB() {
       );
       
       CREATE TABLE IF NOT EXISTS blocked_users (
-        username TEXT PRIMARY KEY,
-        blocked_until INTEGER
+        username TEXT,
+        repo TEXT,
+        issue_number INTEGER,
+        blocked_until INTEGER,
+        PRIMARY KEY (username, repo, issue_number)
       );
     `);
   }

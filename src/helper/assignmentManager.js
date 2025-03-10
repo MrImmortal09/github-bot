@@ -27,7 +27,7 @@ async function getAssignment(repo, issue) {
   );
 }
 
-// Count active assignments for a user (assignments records are removed when issues close).
+// Count active assignments for a user (assignment records are removed when issues close).
 async function getUserActiveAssignmentCount(user) {
   const db = await initDB();
   const row = await db.get(
@@ -37,42 +37,42 @@ async function getUserActiveAssignmentCount(user) {
   return row ? row.count : 0;
 }
 
-// Check if a user is blocked.
-async function isUserBlocked(user) {
+// Check if a user is blocked for a specific issue.
+async function isUserBlocked(repo, issue, user) {
   const db = await initDB();
   const row = await db.get(
-    `SELECT blocked_until FROM blocked_users WHERE username = ?`,
-    [user]
+    `SELECT blocked_until FROM blocked_users WHERE username = ? AND repo = ? AND issue_number = ?`,
+    [user, repo.full_name, issue.number]
   );
   return row && Date.now() < row.blocked_until;
 }
 
-// Get the block expiration time.
-async function getUserBlockTime(user) {
+// Get the block expiration time for a specific issue.
+async function getUserBlockTime(repo, issue, user) {
   const db = await initDB();
   const row = await db.get(
-    `SELECT blocked_until FROM blocked_users WHERE username = ?`,
-    [user]
+    `SELECT blocked_until FROM blocked_users WHERE username = ? AND repo = ? AND issue_number = ?`,
+    [user, repo.full_name, issue.number]
   );
   return row ? row.blocked_until : 0;
 }
 
-// Block a user for a number of hours.
-async function blockUser(user, hours = 5) {
+// Block a user for a specific issue for a number of hours (default 3 hours).
+async function blockUser(repo, issue, user, hours = 3) {
   const db = await initDB();
   const blocked_until = Date.now() + hours * 60 * 60 * 1000;
   await db.run(
-    `INSERT OR REPLACE INTO blocked_users (username, blocked_until) VALUES (?, ?)`,
-    [user, blocked_until]
+    `INSERT OR REPLACE INTO blocked_users (username, repo, issue_number, blocked_until) VALUES (?, ?, ?, ?)`,
+    [user, repo.full_name, issue.number, blocked_until]
   );
 }
 
-// Clear a user's block.
-async function clearBlock(user) {
+// Clear a user's block for a specific issue.
+async function clearBlock(repo, issue, user) {
   const db = await initDB();
   await db.run(
-    `DELETE FROM blocked_users WHERE username = ?`,
-    [user]
+    `DELETE FROM blocked_users WHERE username = ? AND repo = ? AND issue_number = ?`,
+    [user, repo.full_name, issue.number]
   );
 }
 
@@ -87,12 +87,10 @@ async function addToQueue(user, assignment) {
 }
 
 // Process the queue for a given user.
-// Before assigning, check that the queued issue is still open.
-// If the issue is already assigned to someone, update its created_at and increment retry_count to move it to the back of the queue.
+// For each queued assignment, check if the issue is still open and not blocked for that user.
+// If the issue is already assigned, update its created_at and increment retry_count to move it to the back of the queue.
 // If retry_count exceeds the limit (3), the entry is removed to prevent infinite loops.
 async function processQueueForUser(user, octokit) {
-  if (await isUserBlocked(user)) return;
-
   const db = await initDB();
   let activeCount = await getUserActiveAssignmentCount(user);
 
@@ -103,17 +101,17 @@ async function processQueueForUser(user, octokit) {
     );
     if (!queuedAssignment) break;
 
-    try {
-      // Reconstruct repository and issue objects.
-      const repoParts = queuedAssignment.repo.split('/');
-      const repo = {
-        full_name: queuedAssignment.repo,
-        name: repoParts[1],
-        owner: { login: repoParts[0] }
-      };
-      const issue = { number: queuedAssignment.issue_number };
+    // Reconstruct repository and issue objects.
+    const repoParts = queuedAssignment.repo.split('/');
+    const repo = {
+      full_name: queuedAssignment.repo,
+      name: repoParts[1],
+      owner: { login: repoParts[0] }
+    };
+    const issue = { number: queuedAssignment.issue_number };
 
-      // Check if the queued issue is still open.
+    // Check if the queued issue is still open.
+    try {
       const { data: issueData } = await octokit.issues.get({
         owner: repo.owner.login,
         repo: repo.name,
@@ -125,11 +123,24 @@ async function processQueueForUser(user, octokit) {
         continue;
       }
 
-      // If the issue is already assigned to someone (and not to the queued user),
-      // then requeue it by updating created_at and incrementing retry_count.
+      // Check if the user is blocked from being assigned this specific issue.
+      if (await isUserBlocked(repo, issue, user)) {
+        // Skip processing this queued assignment.
+        // Optionally, you can update created_at and retry_count or remove it after too many attempts.
+        if (queuedAssignment.retry_count >= 3) {
+          await db.run(`DELETE FROM user_queues WHERE id = ?`, [queuedAssignment.id]);
+        } else {
+          await db.run(
+            `UPDATE user_queues SET created_at = ?, retry_count = retry_count + 1 WHERE id = ?`,
+            [Date.now(), queuedAssignment.id]
+          );
+        }
+        continue;
+      }
+
+      // If the issue is already assigned to someone (and not to the queued user), then requeue it.
       if (issueData.assignees && issueData.assignees.length > 0) {
         if (queuedAssignment.retry_count >= 3) {
-          // Too many requeue attempts; remove the record.
           await db.run(`DELETE FROM user_queues WHERE id = ?`, [queuedAssignment.id]);
         } else {
           await db.run(
@@ -161,12 +172,10 @@ async function processQueueForUser(user, octokit) {
       activeCount = await getUserActiveAssignmentCount(user);
     } catch (error) {
       console.error(`Error processing queued assignment for ${user} (queue id: ${queuedAssignment.id}):`, error);
-      // If the error indicates the issue is not found (e.g., 404), remove the queue entry.
       if (error.status === 404) {
         await db.run(`DELETE FROM user_queues WHERE id = ?`, [queuedAssignment.id]);
         continue;
       } else {
-        // For other errors, remove the queue entry to prevent infinite looping.
         await db.run(`DELETE FROM user_queues WHERE id = ?`, [queuedAssignment.id]);
         continue;
       }

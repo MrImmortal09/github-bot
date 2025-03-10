@@ -2,7 +2,10 @@ import { issueClosed, issueCommentCreated, issueOpened } from "./func/issues.js"
 import { pullRequestClosed } from "./func/pullRequest.js";
 
 export default function init(app) {
+
+  // When a pull request is closed, remove assignment and reprocess the queue.
   app.on("pull_request.closed", pullRequestClosed);
+
   // When an issue is opened, comment on it.
   app.on("issues.opened", issueOpened);
 
@@ -11,4 +14,5 @@ export default function init(app) {
 
   // Listen for issue comment commands.
   app.on('issue_comment.created', issueCommentCreated);
+
 }
