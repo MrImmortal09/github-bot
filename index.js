@@ -8,6 +8,6 @@ export default async (app) => {
   init(app);
 
   // Start the scheduler.
-  startScheduler(app);
-
+  
+  app.onAny(startScheduler(app))
 };
