@@ -1,6 +1,3 @@
-/**
- * @param {import('probot').Probot} app
- */
 import init from './src/index.js';
 import startScheduler from './src/helper/scheduler.js';
 
