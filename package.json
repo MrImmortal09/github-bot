@@ -8,7 +8,8 @@
   "homepage": "https://github.com/github-bot/",
   "keywords": [
     "probot",
-    "github",
+    "github-bot",
+    "issue-assigner",
     "probot-app"
   ],
   "scripts": {
