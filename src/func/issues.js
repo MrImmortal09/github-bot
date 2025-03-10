@@ -2,7 +2,24 @@ import { assignmentManager } from "../helper/assignmentManager.js";
 
 const issueOpened = async (context) => {
   const issueComment = context.issue({
-    body: "Thanks for opening this issue!"
+    body: `
+## Welcome, Contributor! 🎉
+
+Hi there! I'm **Bot-san** ⭐️, your friendly assistant here to help you navigate this issue.
+
+### Getting Started
+- **Assign Yourself:**  
+  Simply type \`/assign\` in a comment to take ownership of this issue. 🚀
+- **Unassign Yourself:**  
+  If you need to step back, just type \`/unassign\`.
+- **For Maintainers:**  
+  Extend the deadline effortlessly using \`/extend-<number><h or m>\` (for example, \`/extend-1h\`).
+
+### Guidelines
+Before diving in, please make sure to review our [Contributors Guidelines](#) to ensure a smooth and productive experience.
+
+Happy coding and thank you for contributing! 🌟
+    `
   });
   return context.octokit.issues.createComment(issueComment);
 };
