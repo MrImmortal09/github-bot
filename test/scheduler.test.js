@@ -13,11 +13,9 @@ describe("Scheduler (scheduler.js)", () => {
   beforeEach(async () => {
     const db = await initDB();
     await db.exec("DELETE FROM assignments; DELETE FROM user_queues; DELETE FROM blocked_users;");
-    // Insert an expired assignment.
     const expiredDeadline = Date.now() - 10000;
     await assignmentManager.addAssignment(repo, issue, user, expiredDeadline);
 
-    // Create a fake octokit for the scheduler.
     const fakeOctokit = {
       issues: {
         removeAssignees: async () => ({}),
@@ -32,13 +30,15 @@ describe("Scheduler (scheduler.js)", () => {
   });
 
   test("processes expired assignments and blocks the user", async () => {
-    // Call the exported helper function to process expired assignments.
     await processExpiredAssignments(app);
     const assignment = await assignmentManager.getAssignment(repo, issue);
     assert.strictEqual(assignment, undefined, "Expired assignment was not removed");
 
     const db = await initDB();
-    const blockedUser = await db.get("SELECT * FROM blocked_users WHERE username = ?", [user]);
+    const blockedUser = await db.get(
+      "SELECT * FROM blocked_users WHERE username = ? AND repo = ? AND issue_number = ?",
+      [user, repo.full_name, issue.number]
+    );
     assert.ok(blockedUser, "User was not blocked after expired assignment");
   });
 });

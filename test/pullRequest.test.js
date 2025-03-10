@@ -3,7 +3,6 @@ import { assignmentManager } from "../src/helper/assignmentManager.js";
 import { describe, it, beforeEach } from "node:test";
 import assert from "assert";
 
-// Set up a dummy global "app" object to avoid errors in the catch block.
 global.app = {
   log: {
     error: () => {}
@@ -20,7 +19,6 @@ describe("pullRequestClosed", () => {
   let processQueueCalled;
 
   beforeEach(() => {
-    // Reset flags and stub functions.
     removeAssigneesCalled = null;
     createCommentCalled = null;
     getAssignmentCalled = false;
@@ -28,26 +26,22 @@ describe("pullRequestClosed", () => {
     clearBlockCalled = false;
     processQueueCalled = false;
 
-    // Stub assignmentManager methods.
     assignmentManager.getAssignment = async (repo, issue) => {
       getAssignmentCalled = true;
-      // Simulate that an assignment exists.
       return { id: 1, assignee: "testuser" };
     };
     assignmentManager.removeAssignment = async (repo, issue) => {
       removeAssignmentCalled = true;
     };
-    assignmentManager.isUserBlocked = async (user) => {
-      return true; // Simulate that the user is blocked.
-    };
-    assignmentManager.clearBlock = async (user) => {
+    // Updated stubs: now require repo and issue.
+    assignmentManager.isUserBlocked = async (repo, issue, user) => true;
+    assignmentManager.clearBlock = async (repo, issue, user) => {
       clearBlockCalled = true;
     };
     assignmentManager.processQueueForUser = async (user, octokit) => {
       processQueueCalled = true;
     };
 
-    // Build a fake context with a merged PR whose body contains "closes #123".
     fakeContext = {
       payload: {
         pull_request: {
@@ -77,7 +71,6 @@ describe("pullRequestClosed", () => {
   it("should do nothing if PR is not merged", async () => {
     fakeContext.payload.pull_request.merged = false;
     await pullRequestClosed(fakeContext);
-    // None of the stubbed functions should be called.
     assert.strictEqual(removeAssigneesCalled, null, "removeAssignees should not be called");
     assert.strictEqual(getAssignmentCalled, false, "getAssignment should not be called");
     assert.strictEqual(removeAssignmentCalled, false, "removeAssignment should not be called");
@@ -88,7 +81,6 @@ describe("pullRequestClosed", () => {
 
   it("should process a merged PR and handle assignment removal", async () => {
     await pullRequestClosed(fakeContext);
-    // The regex should extract issue number 123 from the PR body.
     assert.deepStrictEqual(
       removeAssigneesCalled,
       {
@@ -99,7 +91,6 @@ describe("pullRequestClosed", () => {
       },
       "removeAssignees was not called with expected arguments"
     );
-    // Verify that the assignmentManager methods were called.
     assert.strictEqual(getAssignmentCalled, true, "getAssignment was not called");
     assert.strictEqual(removeAssignmentCalled, true, "removeAssignment was not called");
     assert.strictEqual(clearBlockCalled, true, "clearBlock was not called");

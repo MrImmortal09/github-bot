@@ -14,7 +14,6 @@ describe("issueOpened", () => {
     let createCommentPayload = null;
 
     const fakeContext = {
-      // context.issue is a helper that wraps the comment payload.
       issue: (obj) => obj,
       octokit: {
         issues: {
@@ -38,7 +37,6 @@ describe("issueClosed", () => {
   let processQueueCalled = false;
 
   beforeEach(() => {
-    // Stub assignmentManager.getAssignment to simulate an existing assignment.
     assignmentManager.getAssignment = async (repository, issue) => {
       return { assignee: "testuser" };
     };
@@ -59,7 +57,7 @@ describe("issueClosed", () => {
         repository: { owner: { login: "owner" }, name: "repo" },
         issue: { number: 101 }
       },
-      octokit: {} // Not needed for this test.
+      octokit: {}
     };
 
     await issueClosed(fakeContext);
@@ -87,20 +85,17 @@ describe("issueClosed", () => {
 });
 
 describe("issueCommentCreated", () => {
-  // Flags to verify that the expected functions are called.
   let addAssignmentCalled = false;
   let addToQueueCalled = false;
   let removeAssignmentCalled = false;
   let processQueueCalled = false;
   let extendAssignmentCalled = false;
   let getAssignmentDeadlineCalled = false;
-  // Variables for controlling stub behavior.
   let isUserBlockedValue = false;
   let activeCountValue = 0;
   let blockTime = Date.now() + 10000;
 
   beforeEach(() => {
-    // Reset flags and stub assignmentManager methods.
     addAssignmentCalled = false;
     addToQueueCalled = false;
     removeAssignmentCalled = false;
@@ -110,8 +105,9 @@ describe("issueCommentCreated", () => {
     isUserBlockedValue = false;
     activeCountValue = 0;
 
-    assignmentManager.isUserBlocked = async (user) => isUserBlockedValue;
-    assignmentManager.getUserBlockTime = async (user) => blockTime;
+    // Updated stubs: now pass repo and issue.
+    assignmentManager.isUserBlocked = async (repo, issue, user) => isUserBlockedValue;
+    assignmentManager.getUserBlockTime = async (repo, issue, user) => blockTime;
     assignmentManager.getUserActiveAssignmentCount = async (user) => activeCountValue;
     assignmentManager.addToQueue = async (user, assignment) => {
       addToQueueCalled = true;
@@ -168,7 +164,7 @@ describe("issueCommentCreated", () => {
         }
       }
     };
-    activeCountValue = 4; // User has reached the limit.
+    activeCountValue = 4;
     await issueCommentCreated(fakeContext);
     assert.strictEqual(addToQueueCalled, true, "addToQueue should be called when active count is 4 or more");
   });
