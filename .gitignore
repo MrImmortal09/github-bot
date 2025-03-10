@@ -1,7 +1,6 @@
 node_modules
 npm-debug.log
 *.pem
-*assignments.db
 !mock-cert.pem
 .env
 coverage
