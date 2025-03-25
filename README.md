@@ -20,8 +20,22 @@ cd github-bot
 # 3. Install dependencies
 npm install
 
-# 4. Run the bot
+# 4. Start the bot
 npm start
+```
+
+## Database Setup
+
+To start the database using Docker Compose, follow these steps:
+
+```sh
+# 1. Ensure Docker and Docker Compose are installed on your machine
+
+# 2. Start the database container
+docker-compose up -d
+
+# 3. The database will be available at the URL specified in the docker-compose.yml file
+#    Update your environment variables to use this database URL
 ```
 
 ## Docker
@@ -33,7 +47,7 @@ To run the project using Docker, follow these steps:
 docker build -t github-bot .
 
 # 2. Start the container
-docker run -e APP_ID=<app-id> -e PRIVATE_KEY=<pem-value> github-bot
+docker run -e APP_ID=<app-id> -e PRIVATE_KEY=<pem-value> -e DATABASE_URL=<database-url> github-bot
 ```
 
 ## Contributing
