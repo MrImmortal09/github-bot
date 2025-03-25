@@ -1,5 +1,5 @@
 import { issueClosed, issueCommentCreated, issueOpened } from "./func/issues.js";
-import { pullRequestClosed } from "./func/pullRequest.js";
+import { pullRequestClosed, pullRequestCommentCreated } from "./func/pullRequest.js";
 
 export default function init(app) {
 
@@ -13,6 +13,6 @@ export default function init(app) {
   app.on("issues.closed", issueClosed);
 
   // Listen for issue comment commands.
-  app.on('issue_comment.created', issueCommentCreated);
+  app.on("issue_comment.created", issueCommentCreated);
 
 }

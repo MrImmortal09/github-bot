@@ -37,7 +37,7 @@ export const pullRequestClosed = async (context) => {
         await assignmentManager.processQueueForUser(sender, context.octokit);
       }
     } catch (error) {
-      app.log.error(`Error handling PR merge for issue #${issueNumber}:`, error);
+      context.log.error(`Error handling PR merge for issue #${issueNumber}:`, error);
     }
   }
 };
