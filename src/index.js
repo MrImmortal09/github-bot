@@ -1,5 +1,5 @@
 import { issueClosed, issueCommentCreated, issueOpened } from "./func/issues.js";
-import { pullRequestClosed, pullRequestCommentCreated } from "./func/pullRequest.js";
+import { pullRequestClosed } from "./func/pullRequest.js";
 
 export default function init(app) {
 
